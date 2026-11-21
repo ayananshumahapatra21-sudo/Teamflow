@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { mockStore } from '../services/mockStore';
 
 const AuthContext = createContext(null);
 
@@ -14,7 +15,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const verifyAuth = async () => {
       const storedToken = localStorage.getItem('teamflow_token');
-      if (storedToken) {
+      const storedUser = localStorage.getItem('teamflow_user');
+      if (storedToken && storedUser) {
         try {
           const res = await api.get('/users/me');
           if (res.data) {
@@ -22,10 +24,13 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('teamflow_user', JSON.stringify(res.data));
           }
         } catch (err) {
-          localStorage.removeItem('teamflow_token');
-          localStorage.removeItem('teamflow_user');
-          setUser(null);
-          setToken(null);
+          // If offline or on static host, retain stored demo user
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {
+            setUser(null);
+            setToken(null);
+          }
         }
       }
       setLoading(false);
@@ -35,8 +40,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    if (res.data) {
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      if (res.data) {
+        const { accessToken, user: userData } = res.data;
+        localStorage.setItem('teamflow_token', accessToken);
+        localStorage.setItem('teamflow_user', JSON.stringify(userData));
+        setToken(accessToken);
+        setUser(userData);
+        return userData;
+      }
+    } catch (err) {
+      // Seamless demo fallback for GitHub Pages & static hosting
+      const res = mockStore.login(email, password);
       const { accessToken, user: userData } = res.data;
       localStorage.setItem('teamflow_token', accessToken);
       localStorage.setItem('teamflow_user', JSON.stringify(userData));
@@ -47,8 +63,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (fullName, email, password) => {
-    const res = await api.post('/auth/register', { fullName, email, password });
-    if (res.data) {
+    try {
+      const res = await api.post('/auth/register', { fullName, email, password });
+      if (res.data) {
+        const { accessToken, user: userData } = res.data;
+        localStorage.setItem('teamflow_token', accessToken);
+        localStorage.setItem('teamflow_user', JSON.stringify(userData));
+        setToken(accessToken);
+        setUser(userData);
+        return userData;
+      }
+    } catch (err) {
+      const res = mockStore.register(fullName, email, password);
       const { accessToken, user: userData } = res.data;
       localStorage.setItem('teamflow_token', accessToken);
       localStorage.setItem('teamflow_user', JSON.stringify(userData));
