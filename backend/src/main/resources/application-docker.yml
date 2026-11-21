@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/teamflow_db}
+    username: ${SPRING_DATASOURCE_USERNAME:teamflow_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:teamflow_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
